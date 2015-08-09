@@ -116,8 +116,8 @@ module Searchkick
 
     # search
 
-    def search_model(searchkick_klass, term = nil, options = {}, &block)
-      query = Searchkick::Query.new(searchkick_klass, term, options)
+    def search_model(searchkick_klass, db, term = nil, options = {}, &block)
+      query = Searchkick::Query.new(searchkick_klass, db, term, options)
       if block
         block.call(query.body)
       end
@@ -151,6 +151,7 @@ module Searchkick
     # http://www.elasticsearch.org/blog/changing-mapping-with-zero-downtime/
     def reindex_scope(scope, options = {})
       skip_import = options[:import] == false
+      db = options[:db]
 
       clean_indices
 
@@ -159,7 +160,7 @@ module Searchkick
       # check if alias exists
       if alias_exists?
         # import before swap
-        index.import_scope(scope) unless skip_import
+        index.import_scope(scope, db) unless skip_import
 
         # get existing indices to remove
         swap(index.name)
@@ -169,7 +170,7 @@ module Searchkick
         swap(index.name)
 
         # import after swap
-        index.import_scope(scope) unless skip_import
+        index.import_scope(scope, db) unless skip_import
       end
 
       index.refresh
@@ -177,28 +178,21 @@ module Searchkick
       true
     end
 
-    def import_scope(scope)
+    def import_scope(scope, db)
       batch_size = @options[:batch_size] || 1000
 
-      # use scope for import
-      scope = scope.search_import if scope.respond_to?(:search_import)
-      if scope.respond_to?(:find_in_batches)
-        scope.find_in_batches batch_size: batch_size do |batch|
-          import batch.select(&:should_index?)
+
+      # https://github.com/karmi/tire/blob/master/lib/tire/model/import.rb
+      # use cursor for Mongoid
+      items = []
+      db.view(scope.all).each do |item|
+        items << item if item.should_index?
+        if items.length == batch_size
+          import items
+          items = []
         end
-      else
-        # https://github.com/karmi/tire/blob/master/lib/tire/model/import.rb
-        # use cursor for Mongoid
-        items = []
-        scope.all.each do |item|
-          items << item if item.should_index?
-          if items.length == batch_size
-            import items
-            items = []
-          end
-        end
-        import items
       end
+      import items
     end
 
     def index_options
@@ -502,7 +496,7 @@ module Searchkick
     end
 
     def search_id(record)
-      record.id.is_a?(Numeric) ? record.id : record.id.to_s
+      record.id.to_s
     end
 
     def search_data(record)

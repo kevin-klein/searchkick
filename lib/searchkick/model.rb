@@ -18,8 +18,8 @@ module Searchkick
         class_variable_set :@@searchkick_callbacks, callbacks
         class_variable_set :@@searchkick_index, options[:index_name] || [options[:index_prefix], model_name.plural, Searchkick.env].compact.join("_")
 
-        define_singleton_method(Searchkick.search_method_name) do |term = nil, options = {}, &block|
-          searchkick_index.search_model(self, term, options, &block)
+        define_singleton_method(Searchkick.search_method_name) do |db, term = nil, options = {}, &block|
+          searchkick_index.search_model(self, db, term, options, &block)
         end
         extend Searchkick::Reindex # legacy for Searchjoy
 

@@ -9,10 +9,11 @@ module Searchkick
 
     def_delegators :results, :each, :any?, :empty?, :size, :length, :slice, :[], :to_ary
 
-    def initialize(klass, response, options = {})
+    def initialize(klass, db, response, options = {})
       @klass = klass
       @response = response
       @options = options
+      @db = db
     end
 
     # experimental: may not make next release
@@ -141,30 +142,34 @@ module Searchkick
     def results_query(records, hits)
       ids = hits.map { |hit| hit["_id"] }
 
-      if options[:includes]
-        records =
-          if defined?(NoBrainer::Document) && records < NoBrainer::Document
-            records.preload(options[:includes])
-          else
-            records.includes(options[:includes])
-          end
+      # if options[:includes]
+      #   records =
+      #     if defined?(NoBrainer::Document) && records < NoBrainer::Document
+      #       records.preload(options[:includes])
+      #     else
+      #       records.includes(options[:includes])
+      #     end
+      # end
+
+      ids.map do |id|
+        @db.load id
       end
 
-      if records.respond_to?(:primary_key) && records.primary_key
-        # ActiveRecord
-        records.where(records.primary_key => ids)
-      elsif records.respond_to?(:all) && records.all.respond_to?(:for_ids)
-        # Mongoid 2
-        records.all.for_ids(ids)
-      elsif records.respond_to?(:queryable)
-        # Mongoid 3+
-        records.queryable.for_ids(ids)
-      elsif records.respond_to?(:unscoped) && records.all.respond_to?(:preload)
-        # Nobrainer
-        records.unscoped.where(:id.in => ids)
-      else
-        raise "Not sure how to load records"
-      end
+      # if records.respond_to?(:primary_key) && records.primary_key
+      #   # ActiveRecord
+      #   records.where(records.primary_key => ids)
+      # elsif records.respond_to?(:all) && records.all.respond_to?(:for_ids)
+      #   # Mongoid 2
+      #   records.all.for_ids(ids)
+      # elsif records.respond_to?(:queryable)
+      #   # Mongoid 3+
+      #   records.queryable.for_ids(ids)
+      # elsif records.respond_to?(:unscoped) && records.all.respond_to?(:preload)
+      #   # Nobrainer
+      #   records.unscoped.where(:id.in => ids)
+      # else
+      #   raise "Not sure how to load records"
+      # end
     end
   end
 end

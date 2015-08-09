@@ -2,6 +2,8 @@
 
 :rocket: Intelligent search made easy
 
+** This is a special version modified to work with couch potato **
+
 Searchkick learns what **your users** are looking for.  As more people search, it gets smarter and the results get better.  It’s friendly for developers - and magical for your users.
 
 Searchkick handles:

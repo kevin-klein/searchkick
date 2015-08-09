@@ -3,7 +3,7 @@ module Searchkick
     attr_reader :klass, :term, :options
     attr_accessor :body
 
-    def initialize(klass, term, options = {})
+    def initialize(klass, db, term, options = {})
       if term.is_a?(Hash)
         options = term
         term = "*"
@@ -14,6 +14,7 @@ module Searchkick
       @klass = klass
       @term = term
       @options = options
+      @db = db
 
       boost_fields = {}
       fields =
@@ -457,7 +458,7 @@ module Searchkick
         includes: options[:include] || options[:includes],
         json: !options[:json].nil?
       }
-      Searchkick::Results.new(searchkick_klass, response, opts)
+      Searchkick::Results.new(searchkick_klass, @db, response, opts)
     end
 
     private
