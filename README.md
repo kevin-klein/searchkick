@@ -57,16 +57,23 @@ class Product < ActiveRecord::Base
 end
 ```
 
-Add data to the search index.
+Add data to the search index. DB is a CouchPotato::database instance, get
+it like this:
 
 ```ruby
-Product.reindex
+db = CouchPotato.use 'products'
+```
+
+And reindex:
+
+```ruby
+Product.reindex db: db
 ```
 
 And to query, use:
 
 ```ruby
-products = Product.search "apples"
+products = Product.search db, "apples"
 products.each do |product|
   puts product.name
 end
@@ -79,7 +86,7 @@ Searchkick supports the complete [Elasticsearch Search API](http://www.elasticse
 Query like SQL
 
 ```ruby
-Product.search "apples", where: {in_stock: true}, limit: 10, offset: 50
+Product.search db, "apples", where: {in_stock: true}, limit: 10, offset: 50
 ```
 
 Search specific fields
@@ -149,7 +156,7 @@ boost_where: {user_id: [{value: 1, factor: 100}, {value: 2, factor: 200}]}
 Use a `*` for the query.
 
 ```ruby
-Product.search "*"
+Product.search db, "*"
 ```
 
 ### Pagination
@@ -158,7 +165,7 @@ Plays nicely with kaminari and will_paginate.
 
 ```ruby
 # controller
-@products = Product.search "milk", page: params[:page], per_page: 20
+@products = Product.search db, "milk", page: params[:page], per_page: 20
 ```
 
 View with kaminari
@@ -198,7 +205,7 @@ end
 And to search (after you reindex):
 
 ```ruby
-Product.search "back", fields: [{name: :word_start}]
+Product.search db, "back", fields: [{name: :word_start}]
 ```
 
 Available options are:
@@ -222,7 +229,7 @@ fields: [{"name^2" => :word_start}] # better interface on the way
 ### Exact Matches
 
 ```ruby
-User.search "hi@searchkick.org", fields: [{email: :exact}, :name]
+User.search db, "hi@searchkick.org", fields: [{email: :exact}, :name]
 ```
 
 ### Language
@@ -275,19 +282,19 @@ By default, Searchkick handles misspelled queries by returning results with an [
 You can change this with:
 
 ```ruby
-Product.search "zucini", misspellings: {edit_distance: 2} # zucchini
+Product.search db, "zucini", misspellings: {edit_distance: 2} # zucchini
 ```
 
 Or turn off misspellings with:
 
 ```ruby
-Product.search "zuchini", misspellings: false # no zucchini
+Product.search db, "zuchini", misspellings: false # no zucchini
 ```
 
 Swapping two letters counts as two edits. To count the [transposition of two adjacent characters as a single edit](https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance), use: [master]
 
 ```ruby
-Product.search "mikl", misspellings: {transpositions: true} # milk
+Product.search db, "mikl", misspellings: {transpositions: true} # milk
 ```
 
 This is planned to be the default in Searchkick 1.0.
@@ -444,7 +451,7 @@ end
 Reindex and search with:
 
 ```ruby
-Product.search "milk", boost_where: {orderer_ids: current_user.id}
+Product.search db, "milk", boost_where: {orderer_ids: current_user.id}
 ```
 
 ### Autocomplete
@@ -466,7 +473,7 @@ end
 Reindex and search with:
 
 ```ruby
-City.search "san fr", fields: [{name: :text_start}]
+City.search db, "san fr", fields: [{name: :text_start}]
 ```
 
 Typically, you want to use a JavaScript library like [typeahead.js](http://twitter.github.io/typeahead.js/) or [jQuery UI](http://jqueryui.com/autocomplete/).
@@ -480,7 +487,7 @@ First, add a route and controller action.
 class CitiesController < ApplicationController
 
   def autocomplete
-    render json: City.search(params[:query], fields: [{name: :text_start}], limit: 10).map(&:name)
+    render json: City.search(db, params[:query], fields: [{name: :text_start}], limit: 10).map(&:name)
   end
 
 end
@@ -514,7 +521,7 @@ end
 Reindex and search with:
 
 ```ruby
-products = Product.search "peantu butta", suggest: true
+products = Product.search db, "peantu butta", suggest: true
 products.suggestions # ["peanut butter"]
 ```
 
