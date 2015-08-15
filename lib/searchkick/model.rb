@@ -43,16 +43,16 @@ module Searchkick
             class_variable_get(:@@searchkick_callbacks) && Searchkick.callbacks?
           end
 
-          def reindex(options = {})
-            searchkick_index.reindex_scope(searchkick_klass, options)
+          def reindex(db, options = {})
+            searchkick_index.reindex_scope(searchkick_klass, db, options)
           end
 
           def clean_indices
             searchkick_index.clean_indices
           end
 
-          def searchkick_import(options = {})
-            (options[:index] || searchkick_index).import_scope(searchkick_klass)
+          def searchkick_import(db, options = {})
+            (options[:index] || searchkick_index).import_scope(searchkick_klass, db)
           end
 
           def searchkick_create_index

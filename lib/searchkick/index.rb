@@ -149,9 +149,8 @@ module Searchkick
 
     # https://gist.github.com/jarosan/3124884
     # http://www.elasticsearch.org/blog/changing-mapping-with-zero-downtime/
-    def reindex_scope(scope, options = {})
+    def reindex_scope(scope, db, options = {})
       skip_import = options[:import] == false
-      db = options[:db]
 
       clean_indices
 
